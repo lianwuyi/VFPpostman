@@ -1,0 +1,143 @@
+*!* 中间层
+
+DEFINE CLASS DataTier as Custom   && 自定义类
+
+ConnectionString = [Driver={SQL Server};Server=192.168.2.8;Database=baozugong_ebong;UID=sa;PWD=3b7d29akfq93lgs8;]
+Handle = SQLSTRINGCONNECT(THIS.ConnectionString) 
+
+PROCEDURE  Save(pTable,pKeyField) && 保存DBF到SQL------------------------
+
+	IF THIS.Handle < 1
+		MESSAGEBOX( [Unable to connect], 16, [SQL连接出错], 2000 )
+		RETURN 
+	ENDIF
+
+	Cmd = [SELECT * FROM ] + pTable + [ WHERE 1=2]
+	lr = SQLEXEC( THIS.Handle, Cmd )  && 产生句子是：查看表结构1=2，即FALSE ，没有得到任何数据，只是显示字段名称而已。
+	IF lr <1
+		MESSAGEBOX( [SQL Error:], 16, [SQL操作失败], 2000 )
+		RETURN 
+	ENDIF 
+	COPY all to ..\test_sql.dbf 
+	USE
+
+	SELECT 0
+	USE ..\test.dbf EXCLUSIVE
+	PACK   
+	GO TOP 
+	keyvalue = &pKeyField
+	USE
+
+	IF keyvalue > 0 && key有值时，先删除数据
+	
+		Cmd = [DELETE FROM ] + pTable + [ WHERE ] + pKeyField + [=] + ALLTRIM(STR(keyvalue))
+		lr1 = SQLEXEC( THIS.Handle, Cmd )  
+		IF lr < 1
+			MESSAGEBOX( [SQL Error:], 16, [SQL操作失败], 2000 )
+			RETURN 
+		ENDIF 
+		nLastKeyVal = keyvalue
+		
+	ELSE && 获取个新的KEY
+	
+		*EXTERNAL ARRAY laVal  && 这是一个数组
+		pTable = UPPER ( pTable )  && 将当前表单的名字改成大写
+
+		*** 查询keys表是否存在。——————
+		Cmd = [SELECT Name FROM SysObjects WHERE Name='KEYS' AND Type='U']  && Cmd= select Name from SysObjects where name='KEYS' and type='U'
+		lr = SQLEXEC( THIS.Handle, Cmd )  && 查询是否有表名是 KEYS 的表。
+		IF lr < 0
+		   MESSAGEBOX( "SQL Error:"+ CHR(13) + Cmd, 16 ) && 查询语句出错
+		ENDIF
+		IF RECCOUNT([SQLResult]) = 0 && 如果查询返回结果是0 ，（没有KEYS表）
+		   Cmd = [CREATE TABLE Keys ( TableName Char(20), LastKeyVal Integer )] && 创建 表名 KEYS，字段 TableName char(20),LastKeyVal Integer
+		   SQLEXEC( THIS.Handle, Cmd )
+		ENDIF
+
+		***查询keys表内lastkeyval是多少———
+		Cmd = [SELECT LastKeyVal FROM Keys WHERE TableName='] + pTable + ['] && 如果查询结果不是0，则查询Keys表内tablename等于当前表名的lastkeyval是多少，
+		lr = SQLEXEC( THIS.Handle, Cmd )
+		IF lr < 0
+		   MESSAGEBOX( "SQL Error:"+ CHR(13) + Cmd, 16 ) && 调出出错语句
+		ENDIF
+
+		IF RECCOUNT([SQLResult]) = 0 && 如果查询返回结果是0 ，则
+		   Cmd = [INSERT INTO Keys VALUES ('] +  pTable + [', 0 )] && 添加keys表里 当前表名和0 这2个值。
+		   lr = SQLEXEC( THIS.Handle, Cmd )
+		   IF lr < 0
+		      MESSAGEBOX( "SQL Error:"+ CHR(13) + Cmd, 16 ) && 调出出错语句
+		   ENDIF
+		ENDIF
+
+		***修改keys表里跟tablename=ctable的lastkeyval值+1———
+		Cmd = [UPDATE Keys SET LastKeyVal=LastKeyVal + 1 WHERE TableName='] +  pTable + [']
+		lr = SQLEXEC( THIS.Handle, Cmd )
+		IF lr < 0
+		   MESSAGEBOX( "SQL Error:"+ CHR(13) + Cmd, 16 ) && 调出出错语句
+		ENDIF
+		 
+		***查询keys表里跟tablename=ctable的lastkeyval值———        
+		Cmd = [SELECT LastKeyVal FROM Keys WHERE TableName='] +  pTable + [']
+		lr = SQLEXEC( THIS.Handle, Cmd )
+		IF lr < 0
+		   MESSAGEBOX( "SQL Error:"+ CHR(13) + Cmd, 16 ) && 调出出错语句
+		ENDIF
+		nLastKeyVal = TRANSFORM(SQLResult.LastKeyVal) &&transform（）函数，提取lastkeyva里的数值，赋值给nLastKeyVal
+		
+	ENDIF 
+	 
+	*** 将我们的临时表数据追加到Sql复制到本地的临时表里 
+	SELECT 0
+	USE ..\test_sql.dbf EXCLUSIVE 
+    APPEND FROM ..\test.dbf 
+    REPLACE ALL &pKeyField WITH VAL(nLastKeyVal)
+    BROWSE
+    
+    LOCAL I
+    Cmd  = [INSERT INTO ] + pTable + [ VALUES ( ]  && 设置变量，cmd等于 添加当前数据 “cmd= INSERT INTO +当前dbf表名+ values (”
+    FOR I = 1 TO FCOUNT()
+        fld  = FIELD(I)
+        IF TYPE(Fld) = [G]
+           LOOP
+        ENDIF
+        dta  = &Fld
+        typ  = VARTYPE(dta)
+        cdta = ALLTRIM(TRANSFORM(dta))
+        cdta = CHRTRAN ( cdta, CHR(39),CHR(146) )
+        DO CASE
+           CASE Typ $ [CM]
+                Cmd = Cmd + ['] + cDta + ['] + [, ]
+           CASE Typ $ [IN]
+                Cmd = Cmd +       cDta       + [, ]
+           CASE Typ = [D]
+                IF cDta = [/  /]
+                   cDta = []
+                ENDIF
+                Cmd = Cmd + ['] + cDta + ['] + [, ]
+           CASE Typ = [T]
+                IF cDta = [/  /]
+                   cDta = []
+                ENDIF
+                Cmd = Cmd + ['] + cDta + ['] + [, ]
+           CASE Typ = [L]
+                Cmd = Cmd + IIF('F'$cdta,[0],[1]) + [, ]
+        ENDCASE
+    ENDFOR
+    
+    USE
+    
+    Cmd = LEFT(Cmd,LEN(cmd)-2) + [ )]
+    
+    lr = SQLEXEC( THIS.Handle, Cmd )
+    IF lr < 0
+       MESSAGEBOX( "SQL Error:"+ CHR(13) + Cmd, 16 ) && 调出出错语句
+       *SUSPEND
+    ENDIF
+    MESSAGEBOX( [保存成功!], 64, [提示：] )
+    SQLDISCONNECT(0)
+ENDPROC 
+
+*!*	DELETE FILE ..\test.dbf 
+*!*	DELETE FILE ..\test_sql.dbf 
+
+ENDFUNC 

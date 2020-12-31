@@ -1,0 +1,38 @@
+CLOSE DATABASES ALL
+CLOSE TABLES ALL
+
+SELECT 0
+USE ..\data\Ship_notes.dbf EXCLUSIVE 
+
+*!*	alter table ship_notes add full£¨C,255)
+GO TOP 
+RETURN 
+
+SCAN
+    Cmd  = [] 
+    FOR I = 1 TO FCOUNT()
+        fld  = FIELD(I)
+        IF TYPE(Fld) = [G] OR Typ = [D] OR Typ = [T]
+           LOOP
+        ENDIF
+        dta  = &Fld
+        typ  = VARTYPE(dta)
+        cdta = ALLTRIM(TRANSFORM(dta))
+        cdta = CHRTRAN ( cdta, CHR(39),CHR(146) )
+        DO CASE
+           CASE Typ $ [CM]
+                Cmd = Cmd  + cDta + [ ] 
+           CASE Typ $ [IN]
+                Cmd = Cmd +       cDta      
+           CASE Typ = [L]
+                Cmd = Cmd + IIF('F'$cdta,[0],[1]) 
+        ENDCASE
+    ENDFOR
+    Cmd = LEFT(Cmd,LEN(cmd)-2)
+    ?Cmd
+ENDSCAN
+
+WAIT CLEAR
+
+CLOSE DATABASES ALL 
+CLOSE TABLES ALL 

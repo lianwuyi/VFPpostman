@@ -1,0 +1,6 @@
+* 保存到MSSQL数据库中间层函数
+
+FUNCTION save_data(cMainTable,cKey)
+  WAIT WINDOW '' NOWAIT NOCLEAR 
+  RETURN   
+ENDFUNC 

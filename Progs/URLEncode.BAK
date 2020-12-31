@@ -1,0 +1,49 @@
+********************************************************
+FUNCTION URLEncode
+*******************
+***  Function: Encodes a string in URL encoded format
+***            for use on URL strings or when passing a
+***            POST buffer to wwIPStuff::HTTPGetEx
+***      Pass: tcValue  -   String to encode
+***    Return: URLEncoded string or ""
+********************************************************
+LPARAMETER tcValue
+LOCAL lcResult, lcChar, lnSize, lnX
+
+*** Large Buffers use the wwIPStuff function 
+*** for quicker response
+if  LEN(tcValue) > 512
+   lnSize=LEN(tcValue)
+   tcValue=PADR(tcValue,lnSize * 3)
+
+   DECLARE INTEGER VFPURLEncode ;
+      IN WWIPSTUFF ;
+      STRING @cText,;
+      INTEGER cInputTextSize
+
+   lnSize=VFPUrlEncode(@tcValue,lnSize)
+
+   IF lnSize > 0
+      RETURN SUBSTR(TRIM(tcValue),1,lnSize)
+   ENDIF
+   RETURN ""
+ENDIF   
+
+*** Do it in VFP Code
+lcResult=""
+
+FOR lnX=1 to len(tcValue)
+   lcChar = SUBSTR(tcValue,lnX,1)
+   DO CASE
+   CASE ATC(lcChar,"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~") > 0
+      lcResult=lcResult + lcChar
+   CASE lcChar=" "
+      lcResult = lcResult + "%20"
+   OTHERWISE
+       *** Convert others to Hex equivalents
+       lcResult = lcResult + "%" + RIGHT(transform(ASC(lcChar),"@0"),2)
+   ENDCASE
+ENDFOR && lnX=1 to len(tcValue)
+
+RETURN lcResult
+* EOF URLEncode

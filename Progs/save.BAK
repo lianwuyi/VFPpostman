@@ -1,0 +1,44 @@
+FUNCTION SAVE(pTable,pKeyFiled)
+
+  WAIT WINDOW 'ok ' NOWAIT NOCLEAR 
+  RETURN 
+  
+*!*	SET TALK OFF
+*!*	CLEAR
+*!*	CLOSE ALL
+*!*	SET STRICTDATE TO 0
+*!*	SET SAFETY OFF
+*!*	SET EXCLUSIVE ON
+*!*	SET CONFIRM ON
+
+*!*	*!*	这是您设定的非法保留字。-------------------------------------------------------------------
+*!*	ReservedWords = [,DESC,DATE,RESERVED,PRINT,ID,VIEW,BY,DEFAULT,CURRENT,KEY,ORDER,CHECK,FROM,TO,] 
+
+*!*	*!*	连接SQL数据库-------------------------------------------------------------------------------
+*!*	*!*ConnStr = [Driver={SQL Server};Server=(local);UID=sa;PWD=;Database=NorthWind;]
+*!*	ConnStr = [Driver={SQL Server};Server=192.168.2.8;UID=sa;PWD=3b7d29akfq93lgs8;Database=baozugong_ebong;]
+*!*	Handle = SQLSTRINGCONNECT( ConnStr )
+*!*	IF Handle < 1
+*!*	*!*	   MESSAGEBOX( "Unable to connect to SQL" + CHR(13) + ConnStr, 16 )
+*!*	   MESSAGEBOX( "无法连接到数据库" + CHR(13) + ConnStr, 16 )
+*!*	   RETURN
+*!*	ENDIF
+
+*!*	Cmd = [SELECT * FROM ] + pTable + [ WHERE 1=2]
+*!*	lr = SQLEXEC( THIS.Handle, Cmd )  && 产生句子是：查看表结构1=2，即FALSE ，没有得到任何数据，只是显示字段名称而已。
+*!*	IF lr <1
+*!*		MESSAGEBOX( [SQL Error:], 16, [SQL操作失败], 2000 )
+*!*		RETURN 
+*!*	ENDIF 
+*!*	COPY all to ..\test_sql.dbf 
+*!*	USE
+
+*!*	SELECT 0
+*!*	USE ..\test.dbf EXCLUSIVE
+*!*	PACK   
+*!*	GO TOP 
+*!*	keyvalue = &pKeyField
+*!*	USE
+	
+	
+ENDFUNC 

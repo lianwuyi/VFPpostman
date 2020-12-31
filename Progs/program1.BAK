@@ -1,0 +1,40 @@
+SELECT Ship_notes
+cRecCount = TRANSFORM(RECCOUNT())
+GO TOP 
+   
+SCAN
+    LOCAL I
+    *Cmd  = [INSERT INTO ] + pTable + [ VALUES ( ]  && 设置变量，cmd等于 添加当前数据 “cmd= INSERT INTO +当前dbf表名+ values (”
+    cmd = ""
+    FOR I = 1 TO FCOUNT()
+        fld  = FIELD(I)
+        IF TYPE(Fld) = [G]
+           LOOP
+        ENDIF
+        dta  = &Fld
+        typ  = VARTYPE(dta)
+        cdta = ALLTRIM(TRANSFORM(dta))
+        cdta = CHRTRAN ( cdta, CHR(39),CHR(146) )
+        DO CASE
+           CASE Typ $ [CM]
+                Cmd = Cmd + ['] + cDta + ['] + [, ]
+           CASE Typ $ [IN]
+                Cmd = Cmd +       cDta       + [, ]
+           CASE Typ = [D]
+                IF cDta = [/  /]
+                   cDta = []
+                ENDIF
+                Cmd = Cmd + ['] + cDta + ['] + [, ]
+           CASE Typ = [T]
+                IF cDta = [/  /]
+                   cDta = []
+                ENDIF
+                Cmd = Cmd + ['] + cDta + ['] + [, ]
+           CASE Typ = [L]
+                Cmd = Cmd + IIF('F'$cdta,[0],[1]) + [, ]
+        ENDCASE
+      ENDFOR
+    *USE
+    
+    Cmd = LEFT(Cmd,LEN(cmd)-2)
+ENDSCAN 

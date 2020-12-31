@@ -1,0 +1,17 @@
+lcUrl = "form=123"
+
+lnSize = LEN(lcUrl) *3
+lcBuffer = REPL(" ",lnSize)
+lnSize = LEN(lcBuffer)
+
+*!*	lnFlags = 0 &&ICU_ENCODE_PERCENT
+*!*	if( InternetCanonicalizeUrl(lcUrl,@lcBuffer,@lnSize, lnFlags) == 0)
+*!*	    RETURN ""
+*!*	ENDIF   
+
+*!*	IF lnSize > 0
+*!*	   RETURN LEFT(lcBuffer,lnSize)
+*!*	ENDIF
+
+WAIT WINDOW LEFT(lcBuffer,lnSize) NOWAIT NOCLEAR 
+RETURN 

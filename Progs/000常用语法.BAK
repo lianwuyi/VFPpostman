@@ -1,0 +1,19 @@
+* ³£ÓÃÓï·¨
+
+SELECT Ship_noteitem
+a1 = RECNO()
+COUNT TO ss
+go top 
+i=1 
+do WHILE .t.
+ IF i > ss
+   EXIT
+ ELSE 
+   repl no with i 
+ ENDIF 
+   i=i+1 
+   skip 
+enddo 
+GO a1
+CHR(13)
+thisform.grdShip_noteitem.column3.SetFocus 

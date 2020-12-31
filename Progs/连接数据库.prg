@@ -1,0 +1,24 @@
+*--------------------------------------------------------------------------------------
+* 连接MSSQL数据库
+*--------------------------------------------------------------------------------------
+SQLDISCONNECT(0)  && 断开所有数据连接
+RELEASE lnHandle  && 设定连接句柄为公共变量,可以为后面的程式引用
+PUBLIC  lnHandle
+lnHandle = 0
+
+*csqlserver 为公共变量，在系统参数里，从目录sys.ini文件里获取
+
+SQLSETPROP(0,"DispLogin" ,3) && 不打开ODBC连接界面
+* 设定连接串
+TempStr1 = 'Eb123456'          && 登陆账号密码
+linkdb1 = 'driver=SQL Server;Server='  && 数据库类型
+linkdb1 = linkdb1+csqlserver           && 数据库路径
+linkdb1 = linkdb1+';Uid=sa;pwd=&TempStr1;database=FoxproAPI_ebong'
+lnHandle= SQLSTRINGCONNECT(linkdb1)
+
+IF lnHandle <= 0 && 连接不成功,
+  SQLDISCONNECT(0) && 断开所有数据连接
+  RELEASE lnHandle && 删除连接句柄变量
+  MESSAGEBOX ("连接数据库失败……",16+0+0,ALLTRIM(c版本号)+"提示")
+  RETURN TO MASTER && 返回到最高级程序的调用处 
+ENDIF
